@@ -1,4 +1,4 @@
-# Plasticity_of_Meiotic_DSB_Tsuruta_et_al
+# Rec12 ChIP-seq analysis, Tsuruta_et_al
 
 This repository contains the shell and R scripts for the analysis in Tsuruta *et al*. (doi: xxxx)\
 from Kouji Hirota laboratory in Tokyo Metropolitan University.\
