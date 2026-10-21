@@ -15,8 +15,8 @@ library(ggbeeswarm)
 line_plot <- function(data,
                       xlim,
                       ylim, 
-                      condition_col  = "condition",
-                      clustering_col = "clustering",
+                      summary_group_col = "condition",
+                      line_group_col    = "clustering",
                       xcol = "time",
                       ycol = "value", 
                       xlab = "", 
@@ -25,12 +25,12 @@ line_plot <- function(data,
   
   current_data <- data
   
-  names(current_data)[names(current_data) == condition_col] <- "sample_info"
+  names(current_data)[names(current_data) == summary_group_col] <- "sample_info"
   condition_name <- unique(current_data$sample_info)
   current_data$sample_info <- factor(current_data$sample_info, 
                                      levels = condition_name)
   
-  names(current_data)[names(current_data) == clustering_col] <- "clustering"
+  names(current_data)[names(current_data) == line_group_col] <- "clustering"
   clustering_name <- unique(current_data$clustering)
   current_data$clustering <- factor(current_data$clustering, 
                                     levels = clustering_name)
@@ -38,42 +38,18 @@ line_plot <- function(data,
   names(current_data)[names(current_data) == xcol] <- "xcol"
   names(current_data)[names(current_data) == ycol] <- "ycol"
   
-  # print(current_data)
+  print(current_data)
   
-  average <- sapply(condition_name, function(n){
-    current_data %>% 
-      filter(sample_info == n) %>% 
-      pull(ycol) %>% 
-      mean(na.rm = TRUE)
-  })
-  
-  SD <- sapply(condition_name, function(n){
-    current_data %>% 
-      filter(sample_info == n) %>% 
-      pull(ycol) %>% 
-      sd(na.rm = TRUE)
-  })
-  
-  xcol <- sapply(condition_name, function(n){
-    current_data %>% 
-      filter(sample_info == n) %>% 
-      pull(xcol) %>% 
-      unique()
-  })
-  
-  clustering_name_for_ave_df <- sapply(condition_name, function(n){
-    current_data %>% 
-      filter(sample_info == n) %>% 
-      pull(clustering) %>% 
-      unique()
-  })
-  
-  average_df <- data.frame(
-    clustering  = clustering_name_for_ave_df,
-    xcol        = xcol,
-    average     = average,
-    SD          = SD
-  )
+  average_df <- current_data %>%
+    group_by(sample_info) %>%
+    summarise(
+      clustering = first(clustering),
+      xcol       = first(xcol),
+      average    = mean(ycol, na.rm = TRUE),
+      SD         = sd(ycol, na.rm = TRUE),
+      .groups    = "drop"
+    ) %>%
+    arrange(xcol)
   
   average_df$clustering <- factor(average_df$clustering, 
                                   levels = unique(average_df$clustering))
@@ -102,16 +78,16 @@ line_plot <- function(data,
 #Fig. 6A
 data <- fread("Table_S1_raw_data_Fig.6A.csv")
 data2 <- data %>% 
-  mutate(condition2 = paste0(strain, "_", condition, "_", time, "h"),
-         condition3 = paste0(strain, "_", condition))
+  mutate(summary_group = paste0(strain, "_", condition, "_", time, "h"),
+         line_group    = paste0(strain, "_", condition))
 
 Fig_6A <- line_plot(data = data2,
                     xlim = c(3.5,12.5),
                     ylim = c(0,100),
-                    condition_col = "condition2", 
+                    summary_group_col = "summary_group", 
                     xcol = "time",
                     ycol = "N2-4_ratio",
-                    clustering_col = "condition3",
+                    line_group_col = "line_group",
                     xlab = "Time",
                     ylab = "MI + MII")
 Fig_6A

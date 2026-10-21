@@ -18,14 +18,14 @@ library(ggbeeswarm)
 #function for bar plot
 bar_plot <- function(data, 
                      ylim, 
-                     condition_col = "condition",
+                     summary_group_col = "condition",
                      result_col = "value", 
                      ylab = "", 
                      font_size = 18){
   
   current_data <- data
   
-  names(current_data)[names(current_data) == condition_col] <- "sample_info"
+  names(current_data)[names(current_data) == summary_group_col] <- "sample_info"
   condition_name <- unique(current_data$sample_info)
   current_data$sample_info <- factor(current_data$sample_info, 
                                      levels = condition_name)
@@ -34,25 +34,13 @@ bar_plot <- function(data,
   
   # print(current_data)
   
-  average <- sapply(condition_name, function(n){
-    current_data %>% 
-      filter(sample_info == n) %>% 
-      pull(value) %>% 
-      mean(na.rm = TRUE)
-  })
-  
-  SD <- sapply(condition_name, function(n){
-    current_data %>% 
-      filter(sample_info == n) %>% 
-      pull(value) %>% 
-      sd(na.rm = TRUE)
-  })
-  
-  average_df <- data.frame(
-    sample_info = condition_name,
-    average     = average,
-    SD          = SD
-  )
+  average_df <- current_data %>%
+    group_by(sample_info) %>%
+    summarise(
+      average = mean(value, na.rm = TRUE),
+      SD      = sd(value, na.rm = TRUE),
+      .groups = "drop"
+    )
   
   average_df$sample_info <- factor(average_df$sample_info, 
                                    levels = unique(average_df$sample_info))
@@ -70,7 +58,8 @@ bar_plot <- function(data,
     theme_classic(base_size = font_size)+
     theme(
       text        = element_text(size = font_size, color = "black"),
-      axis.text.x = element_text(size = font_size, color = "black", angle = 45, hjust = 1, vjust = 1),
+      axis.text.x = element_blank(),
+      # axis.text.x = element_text(size = font_size, color = "black", angle = 45, hjust = 1, vjust = 1),
       axis.text.y = element_text(size = font_size, color = "black"), 
       legend.text = element_text(size = font_size, color = "black"), 
       plot.title  = element_text(size = font_size, color = "black", hjust = 0.5)
@@ -81,12 +70,12 @@ bar_plot <- function(data,
 #Fig. 6B
 data <- fread("Table_S1_raw_data_Fig.6B.csv")
 data2 <- data %>% 
-  mutate(condition2 = paste0(strain, "_", condition, "_", time, "h"))
+  mutate(summary_group = paste0(strain, "_", condition, "_", time, "h"))
 
 Fig_6B <- bar_plot(data = data2,
                    ylim = c(0,8000000),
-                   condition_col = "condition2", 
-                   result_col    = "total_signal", 
+                   summary_group_col = "summary_group", 
+                   result_col        = "total_signal", 
                    ylab = "Total Rec12")
 Fig_6B
 
